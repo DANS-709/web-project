@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="/static/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/icons/bootstrap-icons.css">
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <title>Character Hub</title>
+</head>
+<body>
+<header>
+    <nav class="navbar navbar-expand-sm bg-dark p-2" data-bs-theme="dark">
+        <div class="container-sm">
+            <a class="navbar-brand link-warning" href="/"><h2 class="link-warning">
+                ⚔️ Character Hub</h2></a>
+            <button class="navbar-toggler link-warning" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
+                    aria-expanded="false">
+                <span class="navbar-toggler-icon bg-warning"></span>
+            </button>
+        </div>
+        <div class="d-flex gap-2">
+            <a class="btn btn-outline-warning" href="/login">Войти</a>
+            <a class="btn btn-warning" href="/register">Регистрация</a>
+        </div>
+    </nav>
+</header>
+<main role="main" class="container-fluid p-5">
+    {% block content %}{% endblock %}
+</main>
+<footer>
+    <div class="container-fluid text-bg-secondary p-3">&copy; 2026 Character Hub. Создано для игры на Arcade.</div>
+</footer>
+</body>
+</html>
