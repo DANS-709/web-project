@@ -1,18 +1,26 @@
 import sqlalchemy
 from sqlalchemy import orm
+from flask_login import UserMixin
+from werkzeug.security import generate_password_hash, check_password_hash
 from .db_session import SqlAlchemyBase
 
 
-class User(SqlAlchemyBase):
+class User(SqlAlchemyBase, UserMixin):
     __tablename__ = 'users'
 
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, autoincrement=True)
     username = sqlalchemy.Column(sqlalchemy.String, unique=True, nullable=False)
     email = sqlalchemy.Column(sqlalchemy.String, unique=True, nullable=False)
     hashed_password = sqlalchemy.Column(sqlalchemy.String, nullable=False)
-    # Связи
+
     characters = orm.relationship("Character", back_populates='author')
     comments = orm.relationship("Comment", back_populates='user')
+
+    def set_password(self, password):
+        self.hashed_password = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.hashed_password, password)
 
 
 class Character(SqlAlchemyBase):
@@ -23,16 +31,13 @@ class Character(SqlAlchemyBase):
     level = sqlalchemy.Column(sqlalchemy.Integer, default=1)
     hp = sqlalchemy.Column(sqlalchemy.Integer, default=100)
 
-    # JSON-поля
     stats = sqlalchemy.Column(sqlalchemy.JSON, nullable=True)
     abilities = sqlalchemy.Column(sqlalchemy.JSON, nullable=True)
     race = sqlalchemy.Column(sqlalchemy.JSON, nullable=True)
     character_class = sqlalchemy.Column(sqlalchemy.JSON, nullable=True)
 
-    # изображение
-    image_path = sqlalchemy.Column(sqlalchemy.Text, nullable=True)
+    image_path = sqlalchemy.Column(sqlalchemy.String, nullable=True)
 
-    # Внешние ключи и связи
     user_id = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("users.id"))
     author = orm.relationship('User', back_populates='characters')
 
