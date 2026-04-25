@@ -3,38 +3,39 @@
 {% block title %}Лента персонажей - Character Hub{% endblock %}
 
 {% block content %}
-<div class="page-header">
-    <h1>Лента персонажей</h1>
-    <p>Исследуйте персонажей, созданных сообществом.</p>
+<div class="text-center mb-5">
+    <h1 class="display-5 fw-bold">Лента персонажей</h1>
+    <p class="lead text-body-secondary">Исследуйте персонажей, созданных сообществом.</p>
 </div>
 
-<div class="container">
-    <div class="row row-cols-1 row-cols-md-5 g-3">
-        {% for character in characters %}
-            <div class="col">
-                <div class="card h-100">
-                    {% if character.image_path %}
-                        <img src="{{ character.image_path }}" alt="{{ character.name }}" class="card-img-top">
-                    {% else %}
-                        <div class="card-img-top placeholder text-center text-muted bg-light py-3">Нет фото</div>
-                    {% endif %}
+<div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+    {% for character in characters %}
+        <div class="col">
+            <div class="card h-100 shadow-sm border-0 bg-body">
+                {% if character.image_path %}
+                    <img src="{{ url_for('static', filename=character.image_path) }}" class="card-img-top object-fit-cover" alt="{{ character.name }}" style="height: 250;">
+                {% else %}
+                    <div class="card-img-top bg-secondary d-flex align-items-center justify-content-center text-light" style="height: 375px;">
+                        <i class="bi bi-person-fill display-1"></i>
+                    </div>
+                {% endif %}
 
-                    <div class="card-body d-flex flex-column">
-                <h2 class="card-title">{{ character.name }}</h2>
-                <div class="card-meta mt-auto">
-                    <span class="level-badge badge bg-secondary">Уровень: {{ character.level }}</span>
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title fw-bold mb-1">{{ character.name }}</h5>
+                    <p class="card-text text-muted small mb-3">
+                        <span class="badge text-bg-danger rounded-pill">Уровень: {{ character.level }}</span>
+                        <span class="badge text-bg-success">Здоровье: {{ character.hp}}</span>
+                        {% if character.race %}<span class="badge text-bg-secondary">{{ character.race[0] }}</span>{% endif %}
+                        {% if character.character_class %}<span class="badge text-bg-secondary">{{ character.character_class[0] }}</span>{% endif %}
+                    </p>
+                    <a href="{{ url_for('view_character', char_id=character.id) }}" class="btn btn-outline-danger w-100 mt-auto">Подробнее</a>
                 </div>
             </div>
-            <div class="card-footer">
-                <button class="btn btn-secondary w-100">Подробнее</button>
-            </div>
         </div>
-    </div>
-{% else %}
-    <div class="col-12">
-        <p class="empty-state text-center">Персонажей пока нет. Будьте первым, кто загрузит своего героя!</p>
-    </div>
-{% endfor %}
-</div>
+    {% else %}
+        <div class="col-12 text-center py-5">
+            <h4 class="text-muted">Персонажей пока нет. Будьте первым!</h4>
+        </div>
+    {% endfor %}
 </div>
 {% endblock %}

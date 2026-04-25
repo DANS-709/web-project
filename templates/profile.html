@@ -3,47 +3,51 @@
 {% block title %}Личный кабинет - Character Hub{% endblock %}
 
 {% block content %}
-<div class="profile-header">
-    <div class="profile-info">
-        <h1>Добро пожаловать, {{ current_user.username }}!</h1>
-        <p class="text-muted">{{ current_user.email }}</p>
-    </div>
-    <div class="profile-actions">
-        <a href="#" class="btn btn-success">+ Добавить персонажа</a>
+<div class="card shadow-sm border-0 mb-4 bg-body">
+    <div class="card-body d-flex flex-wrap justify-content-between align-items-center p-4">
+        <div>
+            <h2 class="fw-bold mb-0">Добро пожаловать, {{ current_user.username }}!</h2>
+            <p class="text-muted mb-0">{{ current_user.email }}</p>
+        </div>
     </div>
 </div>
 
-<div class="section-title">
-    <h2>Мои персонажи</h2>
-</div>
+<h3 class="mb-4 border-bottom pb-2">Мои персонажи</h3>
 
-<div class="container">
-    <div class="row row-cols-1 row-cols-md-5 g-3">
+<div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
     {% for character in current_user.characters %}
         <div class="col">
-                <div class="card h-100">
-                    {% if character.image_path %}
-                        <img src="{{ character.image_path }}" alt="{{ character.name }}" class="card-img-top">
-                    {% else %}
-                        <div class="card-img-top placeholder text-center text-muted bg-light py-3">Нет фото</div>
-                    {% endif %}
+            <div class="card h-100 shadow-sm border-0 bg-body">
+                {% if character.image_path %}
+                    <img src="{{ url_for('static', filename=character.image_path) }}" class="card-img-top object-fit-cover" style="height: 250;">
+                {% else %}
+                <div class="card-img-top bg-secondary d-flex align-items-center justify-content-center text-light" style="height: 375px;">
+                        <i class="bi bi-person-fill display-1"></i>
+                    </div>
+                {% endif %}
 
-                    <div class="card-body d-flex flex-column">
-                <h2 class="card-title">{{ character.name }}</h2>
-                <div class="card-meta mt-auto">
-                    <span class="level-badge badge bg-secondary">Уровень: {{ character.level }}</span>
+                <div class="card-body">
+                    <h5 class="card-title">{{ character.name }}</h5>
+                    <span class="badge text-bg-danger rounded-pill">Уровень: {{ character.level }}</span>
+                        <span class="badge text-bg-success">Здоровье: {{ character.hp}}</span>
+                        {% if character.race %}<span class="badge text-bg-secondary">{{ character.race[0] }}</span>{% endif %}
+                        {% if character.character_class %}<span class="badge text-bg-secondary">{{ character.character_class[0] }}</span>{% endif %}
                 </div>
-            </div>
-            <div class="card-footer">
-                <button class="btn btn-secondary w-100">Подробнее</button>
-            </div>
+                <div class="card-footer bg-transparent border-0 d-flex gap-2 pb-3">
+                    <a href="{{ url_for('view_character', char_id=character.id) }}" class="btn btn-primary btn-sm flex-grow-1">Детали</a>
+
+                    <!-- Форма удаления -->
+                    <form action="{{ url_for('delete_character', char_id=character.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Точно удалить персонажа?');">
+                        <button type="submit" class="btn btn-danger btn-sm" title="Удалить"><i class="bi bi-trash"></i></button>
+                    </form>
+                </div>
             </div>
         </div>
     {% else %}
-        <div class="empty-state">
-            <p>У вас пока нет сохраненных персонажей.</p>
+        <div class="col-12 text-center py-5">
+            <p class="text-muted fs-5">У вас пока нет сохраненных персонажей.</p>
+            <a href="{{ url_for('add_character') }}" class="btn btn-lg btn-success mt-2">Загрузить JSON из игры</a>
         </div>
     {% endfor %}
-</div>
 </div>
 {% endblock %}

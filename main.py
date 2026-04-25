@@ -1,16 +1,17 @@
-import os
-from base64 import b64decode
-from flask import Flask, render_template, redirect, url_for, request
+from flask import Flask, render_template, redirect, url_for, flash, abort
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from data import db_session
 from data.all_models import User, Character
 from forms.user import RegisterForm, LoginForm
+import os
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'character_hub_secret_key'
+app.config['SECRET_KEY'] = 'character_hub_super_secret_key'
+# Папка для сохранения картинок (пригодится потом)
+app.config['UPLOAD_FOLDER'] = os.path.join('static', 'images')
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 login_manager = LoginManager()
 login_manager.init_app(app)
-# если неавторизованный пользователь попытается зайти на защищенную страницу, его перекинет сюда:
 login_manager.login_view = 'login'
 
 
@@ -23,35 +24,28 @@ def load_user(user_id):
 @app.route('/')
 def index():
     db_sess = db_session.create_session()
-    characters = db_sess.query(Character).all()
+    characters = db_sess.query(Character).order_by(Character.id.desc()).all()
     return render_template('index.html', characters=characters)
-
 
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    # Если уже вошел, то перекидываем на главную
     if current_user.is_authenticated:
         return redirect(url_for('index'))
-
     form = RegisterForm()
     if form.validate_on_submit():
         db_sess = db_session.create_session()
-        if db_sess.query(User).filter(User.email == form.email.data).first():
-            return render_template('register.html', title='Регистрация', form=form, message="Такая почта уже есть")
-        if db_sess.query(User).filter(User.username == form.username.data).first():
-            return render_template('register.html', title='Регистрация', form=form, message="Такое имя уже занято")
-
-        user = User(
-            username=form.username.data,
-            email=form.email.data
-        )
+        if (db_sess.query(User).filter(User.email == form.email.data).first() or
+                db_sess.query(User).filter(User.username == form.username.data).first()):
+            flash('Пользователь с такими данными уже существует', 'danger')
+            return render_template('register.html', title='Регистрация', form=form)
+        user = User(username=form.username.data, email=form.email.data)
         user.set_password(form.password.data)
         db_sess.add(user)
         db_sess.commit()
         login_user(user, remember=form.remember_me.data)
+        flash('Регистрация успешна!', 'success')
         return redirect(url_for('profile'))
-
     return render_template('register.html', title='Регистрация', form=form)
 
 
@@ -59,7 +53,6 @@ def register():
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('index'))
-
     form = LoginForm()
     if form.validate_on_submit():
         db_sess = db_session.create_session()
@@ -67,8 +60,7 @@ def login():
         if user and user.check_password(form.password.data):
             login_user(user, remember=form.remember_me.data)
             return redirect(url_for('profile'))
-        return render_template('login.html', message="Неправильный логин или пароль", form=form)
-
+        flash('Неправильный логин или пароль', 'danger')
     return render_template('login.html', title='Авторизация', form=form)
 
 
@@ -85,38 +77,36 @@ def profile():
     return render_template('profile.html', title='Личный кабинет')
 
 
-def add_data():
-    """Добавляет тестовые данные"""
+@app.route('/character/<int:char_id>')
+def view_character(char_id):
     db_sess = db_session.create_session()
-    if not db_sess.query(Character).first():
-        # Создаем тестового юзера (пароль: 123456)
-        test_user = User(username="admin", email="admin@hub.local", hashed_password="pbkdf2:sha256:260000$sRHL68rPP0PtzOUj$c598e722c8e7c9904ab75ad768b276bdf7ec269ca7680e038d39858a6192a6d9")
-        db_sess.add(test_user)
-        db_sess.commit()
-        image_path = os.path.join('static/images', 'test.png').replace('\\', '/')
-        img_base64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAANSURBVBhXY3jP4PgfAAWgA4Dzhh/vAAAAAElFTkSuQmCC"
-        image_data = b64decode(img_base64)
-        # Сохраняем файл
-        with open(image_path, 'wb') as f:
-            f.write(image_data)
-        test_char1 = Character(
-            name="Артур Педрагон",
-            level=15,
-            user_id=test_user.id,
-            image_path= '../' + image_path
-        )
-        test_char2 = Character(
-            name="Эльфийка Лира",
-            level=8,
-            user_id=test_user.id,
-            image_path= '../' + image_path
-        )
+    character = db_sess.query(Character).get(char_id)
+    if not character:
+        abort(404)
+    return render_template('character_detail.html', title=character.name, character=character)
 
-        db_sess.add_all([test_char1, test_char2])
-        db_sess.commit()
+
+@app.route('/character/<int:char_id>/delete', methods=['POST'])
+@login_required
+def delete_character(char_id):
+    db_sess = db_session.create_session()
+    character = db_sess.query(Character).get(char_id)
+    if not character:
+        abort(404)
+    if character.user_id != current_user.id:
+        abort(403)
+    # Удаляем картинку
+    if character.image_path:
+        full_path = os.path.join('static', character.image_path)
+        if os.path.exists(full_path):
+            os.remove(full_path)
+
+    db_sess.delete(character)
+    db_sess.commit()
+    flash('Персонаж удален.', 'success')
+    return redirect(url_for('profile'))
 
 
 if __name__ == '__main__':
     db_session.global_init("db/character_hub.sqlite")
-    add_data()
     app.run(port=8080, host='127.0.0.1', debug=True)
