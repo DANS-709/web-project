@@ -52,8 +52,7 @@
         <!-- Кнопки управления (только для автора) -->
         {% if current_user.is_authenticated and current_user.id == character.user_id %}
             <div class="mt-3 d-flex gap-2">
-                <!-- Ссылка на редактирование (потом доделаю) -->
-                <button class="btn btn-secondary w-50" disabled>Редактировать</button>
+                <a href="{{ url_for('edit_character', char_id=character.id) }}" class="btn btn-info w-50">Редактировать</a>
                 <form action="{{ url_for('delete_character', char_id=character.id) }}" method="POST" class="w-50" onsubmit="return confirm('Удалить?');">
                     <button type="submit" class="btn btn-danger w-100">Удалить</button>
                 </form>

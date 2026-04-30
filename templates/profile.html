@@ -9,6 +9,9 @@
             <h2 class="fw-bold mb-0">Добро пожаловать, {{ current_user.username }}!</h2>
             <p class="text-muted mb-0">{{ current_user.email }}</p>
         </div>
+        <div class="d-flex gap-2 mt-3 mt-md-0">
+            <a href="{{ url_for('add_character') }}" class="btn btn-success"><i class="bi bi-plus-lg"></i> Добавить персонажа</a>
+        </div>
     </div>
 </div>
 

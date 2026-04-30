@@ -1,0 +1,10 @@
+<tr>
+    <td><input type="text" name="ability_name" class="form-control form-control-sm" value="{{ name|default('') }}"></td>
+    <td><input type="text" name="ability_desc" class="form-control form-control-sm" value="{{ desc|default('') }}"></td>
+    <td><input type="text" name="ability_effect" class="form-control form-control-sm text-monospace" value="{{ effect|default('') }}"></td>
+    <td class="text-center">
+        <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('tr').remove()">
+            <i class="bi bi-x"></i>
+        </button>
+    </td>
+</tr>
