@@ -6,3 +6,10 @@
     border-radius: 0.75rem;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
+
+.comment-text {
+  word-break: break-all;      /* принудительный перенос без пробелов */
+  overflow-wrap: break-word; /* перенос по словам, если возможно */
+  white-space: normal;        /* стандартный перенос */
+  max-width: 100%;          /* не шире контейнера */
+}

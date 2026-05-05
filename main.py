@@ -1,8 +1,10 @@
 from flask import Flask, render_template, redirect, url_for, flash, request, abort
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from data import db_session
-from data.all_models import User, Character
+from data.all_models import User, Character, Like, Comment
 from forms.user import RegisterForm, LoginForm
+from forms.character import CharacterForm
+from PIL import Image
 import os
 import base64
 import uuid
@@ -13,6 +15,8 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'character_hub_super_secret_key'
 # Папка для сохранения картинок
 app.config['UPLOAD_FOLDER'] = os.path.join('static', 'images')
+# Максимальный размер файла
+app.config['MAX_CONTENT_LENGTH'] = 8 * 1024 * 1024 * 2  # 2 МБ
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -90,7 +94,7 @@ def register():
         if (db_sess.query(User).filter(User.email == form.email.data).first() or
                 db_sess.query(User).filter(User.username == form.username.data).first()):
             flash('Пользователь с такими данными уже существует', 'danger')
-            return render_template('register.html', title='Регистрация', form=form)
+            return render_template('register.html', form=form)
         user = User(username=form.username.data, email=form.email.data)
         user.set_password(form.password.data)
         db_sess.add(user)
@@ -98,7 +102,7 @@ def register():
         login_user(user, remember=form.remember_me.data)
         flash('Регистрация успешна!', 'success')
         return redirect(url_for('profile'))
-    return render_template('register.html', title='Регистрация', form=form)
+    return render_template('register.html', form=form)
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -113,7 +117,7 @@ def login():
             login_user(user, remember=form.remember_me.data)
             return redirect(url_for('profile'))
         flash('Неправильный логин или пароль', 'danger')
-    return render_template('login.html', title='Авторизация', form=form)
+    return render_template('login.html', form=form)
 
 
 @app.route('/logout')
@@ -126,20 +130,32 @@ def logout():
 @app.route('/profile')
 @login_required
 def profile():
-    return render_template('profile.html', title='Личный кабинет')
+    return render_template('profile.html')
 
 
 @app.route('/character/add', methods=['GET', 'POST'])
 @login_required
 def add_character():
+    form = CharacterForm()
     if request.method == 'POST':
         db_sess = db_session.create_session()
         char = Character(user_id=current_user.id)
         get_data(char)
-        # Картинка
         b64_data = request.form.get('image_b64')
         img_file = request.files.get('image_file')
         if img_file and img_file.filename != '':
+            try:
+                image = Image.open(img_file)
+                width, height = image.size
+                if not (140 <= width <= 160 and 170 <= height <= 190) or not (20 <= height - width <= 40):
+                    flash(
+                        f'Изображение имеет неправильные размеры или соотношение сторон.'
+                        f' Макс: 160×190 Мин: 140×170 Ваше: {width}×{height}','danger')
+                    return render_template('character_form.html', form=form, character=None)
+            except Exception as e:
+                flash(f'Ошибка при работе с изображением: {e}', 'danger')
+                return render_template('character_form.html', form=form, character=None)
+            img_file.stream.seek(0)  # Сбрасываем указатель потока для повторного чтения (так просто надо)
             filename = f"char_{uuid.uuid4().hex[:8]}_{secure_filename(img_file.filename)}"
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             img_file.save(filepath)
@@ -150,8 +166,7 @@ def add_character():
         db_sess.commit()
         flash('Персонаж успешно добавлен!', 'success')
         return redirect(url_for('profile'))
-
-    return render_template('character_form.html', title='Создание персонажа', character=None)
+    return render_template('character_form.html', form=form, character=None)
 
 
 @app.route('/character/<int:char_id>')
@@ -160,7 +175,12 @@ def view_character(char_id):
     character = db_sess.query(Character).get(char_id)
     if not character:
         abort(404)
-    return render_template('character_detail.html', title=character.name, character=character)
+    like = db_sess.query(Like).filter(Like.user_id == current_user.id, Like.character_id == char_id).first()
+    if like:
+        user_liked = True
+    else:
+        user_liked = False
+    return render_template('character_detail.html', character=character, user_liked=user_liked)
 
 
 @app.route('/character/<int:char_id>/delete', methods=['POST'])
@@ -187,19 +207,40 @@ def delete_character(char_id):
 @app.route('/character/<int:char_id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_character(char_id):
+    form = CharacterForm()
     db_sess = db_session.create_session()
-    character = db_sess.query(Character).get(char_id)
-    if not character:
+    char = db_sess.query(Character).get(char_id)
+    if not char:
         abort(404)
-    if character.user_id != current_user.id:
+    if char.user_id != current_user.id:
         abort(403)
     if request.method == 'POST':
-        get_data(character)
+        get_data(char)
+        b64_data = request.form.get('image_b64')
+        img_file = request.files.get('image_file')
+        if img_file and img_file.filename != '':
+            try:
+                image = Image.open(img_file)
+                width, height = image.size
+                if not (140 <= width <= 160 and 170 <= height <= 190) or not (20 <= height - width <= 40):
+                    flash(
+                        f'Изображение имеет неправильные размеры или соотношение сторон.'
+                        f' Макс: 160×190 Мин: 140×170 Ваше: {width}×{height}','danger')
+                    return render_template('character_edit.html', form=form, character=char)
+            except Exception as e:
+                flash(f'Ошибка при работе с изображением: {e}', 'danger')
+                return render_template('character_edit.html', form=form, character=char)
+            img_file.stream.seek(0)  # Сбрасываем указатель потока для повторного чтения (так просто надо)
+            filename = f"char_{uuid.uuid4().hex[:8]}_{secure_filename(img_file.filename)}"
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            img_file.save(filepath)
+            char.image_path = f"images/{filename}"
+        elif b64_data:
+            char.image_path = save_image_from_b64(b64_data)
         db_sess.commit()
         flash('Персонаж обновлен!', 'success')
-        return redirect(url_for('view_character', char_id=character.id))
-
-    return render_template('character_edit.html', title=f"Редактирование: {character.name}", character=character)
+        return redirect(url_for('view_character', char_id=char.id))
+    return render_template('character_edit.html', form=form, character=char)
 
 
 @app.route('/htmx/add-ability')
@@ -213,12 +254,11 @@ def htmx_add_ability():
 def load_json_character():
     file = request.files.get('json_file')
     if not file:
-        abort(404)
+        return "", 204
     try:
         data = json.load(file)
         db_sess = db_session.create_session()
         char = Character(user_id=current_user.id)
-        # Базовые поля
         char.name = data.get('name', 'Безымянный')
         char.level = int(data.get('level', 1))
         char.hp = int(data.get('hp', 100))
@@ -235,8 +275,46 @@ def load_json_character():
         db_sess.commit()
         flash('Персонаж успешно добавлен!', 'success')
         return '', 200, {'HX-Redirect': url_for('profile')}
-    except Exception as e:
-        return f'<div class="alert alert-danger">Ошибка JSON: {e}</div>', 400
+    except Exception:
+        abort(400)
+
+
+@app.route('/character/<int:char_id>/like', methods=['POST'])
+@login_required
+def toggle_like(char_id):
+    db_sess = db_session.create_session()
+    character = db_sess.query(Character).get(char_id)
+    if not character:
+        abort(404)
+
+    like = db_sess.query(Like).filter(Like.user_id == current_user.id, Like.character_id == char_id).first()
+
+    if like:
+        db_sess.delete(like)
+        user_liked = False
+    else:
+        new_like = Like(user_id=current_user.id, character_id=char_id)
+        db_sess.add(new_like)
+        user_liked = True
+
+    db_sess.commit()
+    return render_template('partials/like_btn.html', character=character, user_liked=user_liked)
+
+
+@app.route('/character/<int:char_id>/comment', methods=['POST'])
+@login_required
+def add_comment(char_id):
+    text = request.form.get('text')
+    if not text or not text.strip():
+        return "", 204
+
+    db_sess = db_session.create_session()
+    character = db_sess.query(Character).get(char_id)
+
+    comment = Comment(text=text.strip(), user_id=current_user.id, character_id=char_id)
+    db_sess.add(comment)
+    db_sess.commit()
+    return render_template('partials/comments_list.html', character=character)
 
 
 if __name__ == '__main__':

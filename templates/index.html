@@ -13,7 +13,7 @@
         <div class="col">
             <div class="card h-100 shadow-sm border-0 bg-body">
                 {% if character.image_path %}
-                    <img src="{{ url_for('static', filename=character.image_path) }}" class="card-img-top object-fit-cover" alt="{{ character.name }}" style="height: 250;">
+                    <img src="{{ url_for('static', filename=character.image_path) }}" class="card-img-top object-fit-cover" alt="{{ character.name }}">
                 {% else %}
                     <div class="card-img-top bg-secondary d-flex align-items-center justify-content-center text-light" style="height: 375px;">
                         <i class="bi bi-person-fill display-1"></i>

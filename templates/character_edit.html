@@ -1,31 +1,52 @@
 {% extends "base.html" %}
 
-{% block title %}Редактирование: {{ character.name }}{% endblock %}
+{% block title %}Редактирование персонажа{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4">
-    <h2 class="mb-0">Редактирование персонажа</h2>
+<div id="form-container">
+    <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4">
+        <h2 class="mb-0">character.name if character else 'Безымянный'</h2>
+
+        <div>
+            <form hx-post="{{ url_for('load_json_character') }}"
+                  hx-encoding="multipart/form-data"
+                  hx-target="#form-container"
+                  hx-swap="innerHTML">
+                <input type="file" name="json_file" id="jsonUpload" accept=".json" class="d-none" onchange="this.form.requestSubmit()">
+                <label for="jsonUpload" class="btn btn-success shadow-sm">
+                    <i class="bi bi-filetype-json"></i> Загрузить из JSON
+                </label>
+            </form>
+        </div>
+    </div>
 </div>
 
-<form method="POST" id="characterForm">
+<form method="POST" enctype="multipart/form-data" id="characterForm">
+    {{ form.image_b64() }}
     <div class="row g-4">
-        <!-- Левая колонка -->
         <div class="col-md-4">
             <div class="card shadow-sm border-0 mb-4 bg-body">
                 <div class="card-body">
                     <h5 class="card-title mb-3">Основное</h5>
+
+                    <div class="text-center mb-3">
+                        {{ form.image_file(class="form-control form-control-sm", accept="image/*") }}
+                        <small class="text-muted">150×180 (±10px)</small>
+                    </div>
+
                     <div class="mb-3">
                         <label class="form-label">Имя</label>
-                        <input type="text" name="name" class="form-control" value="{{ character.name }}" required>
+                        {{ form.name(class="form-control", placeholder="Имя персонажа",value=character.name if character else '') }}
+                        {% for error in form.name.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
                     </div>
                     <div class="row g-2 mb-3">
                         <div class="col-6">
                             <label class="form-label">Уровень</label>
-                            <input type="number" name="level" class="form-control" value="{{ character.level }}">
+                            {{ form.level(class="form-control", value=character.level if character.lvl else 1) }}
                         </div>
                         <div class="col-6">
                             <label class="form-label">HP</label>
-                            <input type="number" name="hp" class="form-control" value="{{ character.hp }}">
+                            {{ form.hp(class="form-control", value=character.hp if character.hp else 100) }}
                         </div>
                     </div>
                 </div>
@@ -33,31 +54,31 @@
 
             <div class="card shadow-sm border-0 bg-body">
                 <div class="card-body">
-                    <h5 class="card-title mb-3">Характеристики (Stats)</h5>
+                    <h5 class="card-title mb-3">Характеристики</h5>
                     <div class="row g-2">
-                        <div class="col-6"><label class="form-label small">Сила</label><input type="number" name="strength" class="form-control form-control-sm" value="{{ character.stats.get('strength', 0) if character.stats else 0 }}"></div>
-                        <div class="col-6"><label class="form-label small">Ловкость</label><input type="number" name="dexterity" class="form-control form-control-sm" value="{{ character.stats.get('dexterity', 0) if character.stats else 0 }}"></div>
-                        <div class="col-6"><label class="form-label small">Интеллект</label><input type="number" name="intelligence" class="form-control form-control-sm" value="{{ character.stats.get('intelligence', 0) if character.stats else 0 }}"></div>
-                        <div class="col-6"><label class="form-label small">Харизма</label><input type="number" name="charisma" class="form-control form-control-sm" value="{{ character.stats.get('charisma', 0) if character.stats else 0 }}"></div>
+                        <div class="col-6"><label class="small">Сила</label>{{ form.strength(class="form-control form-control-sm",  value=character.stats['strength'] if character.stats else 0) }}</div>
+                        <div class="col-6"><label class="small">Ловкость</label>{{ form.dexterity(class="form-control form-control-sm",  value=character.stats['dexterity'] if character.stats else 0) }}</div>
+                        <div class="col-6"><label class="small">Интеллект</label>{{ form.intelligence(class="form-control form-control-sm",  value=character.stats['intelligence'] if character.stats else 0) }}</div>
+                        <div class="col-6"><label class="small">Харизма</label>{{ form.charisma(class="form-control form-control-sm",  value=character.stats['charisma'] if character.stats else 0) }}</div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Правая колонка -->
         <div class="col-md-8">
             <div class="card shadow-sm border-0 mb-4 bg-body">
                 <div class="card-body">
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <h5 class="card-title">Раса</h5>
-                            <input type="text" name="race_name" class="form-control mb-2" value="{{ character.race[0] if character.race else '' }}">
-                            <textarea name="race_effect" class="form-control form-control-sm text-monospace" rows="2">{{ character.race[1] if character.race and character.race|length > 1 else '' }}</textarea>
+                            <h5>Раса</h5>
+                            {{ form.race_name(class="form-control mb-2", placeholder="Название", value=character.race[0] if character.race else '') }}
+                            {{ form.race_effect(class="form-control form-control-sm text-monospace", rows="2", placeholder="Код эффекта", value=character.race[1] if character.race else "") }}
+
                         </div>
                         <div class="col-md-6">
-                            <h5 class="card-title">Класс</h5>
-                            <input type="text" name="class_name" class="form-control mb-2" value="{{ character.character_class[0] if character.character_class else '' }}">
-                            <textarea name="class_effect" class="form-control form-control-sm text-monospace" rows="2">{{ character.character_class[1] if character.character_class and character.character_class|length > 1 else '' }}</textarea>
+                            <h5>Класс</h5>
+                            {{ form.class_name(class="form-control mb-2", placeholder="Название", value=character.character_class[0] if character.character_class else '')}}
+                            {{ form.class_effect(class="form-control form-control-sm text-monospace", placeholder="Код эффекта", value=character.character_class[1] if character.character_class else "") }}
                         </div>
                     </div>
                 </div>
@@ -65,45 +86,41 @@
 
             <div class="card shadow-sm border-0 bg-body">
                 <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">Способности (Abilities)</h5>
-                        <button type="button" class="btn btn-sm btn-outline-primary"
-                                hx-get="{{ url_for('htmx_add_ability') }}"
-                                hx-target="#abilities-body"
-                                hx-swap="beforeend">
-                            + Добавить
-                        </button>
-                    </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover table-sm mb-0">
-                            <thead class="table-dark">
-                                <tr>
-                                    <th>Название</th>
-                                    <th>Описание</th>
-                                    <th>Эффект (код)</th>
-                                </tr>
-                            </thead>
-                            <tbody id="abilities-body">
-                                <!-- Выводим существующие -->
-                                {% if character.abilities %}
+                    <h5 class="mb-0">Способности</h5>
+                    <button type="button" class="btn btn-sm btn-outline-primary"
+                            hx-get="{{ url_for('htmx_add_ability') }}"
+                            hx-target="#abilities-body"
+                            hx-swap="beforeend">
+                        + Добавить
+                    </button>
+                </div>
+                <div class="card-body p-0" style="max-height: 300px; overflow-y: auto;">
+                    <table class="table table-hover table-sm mb-0">
+                        <thead class="table-dark">
+                            <tr><th>Название</th><th>Описание</th><th>Эффект</th><th></th></tr>
+                        </thead>
+                        <tbody id="abilities-body">
+                            {% if character.abilities %}
                                     {% for ability in character.abilities %}
                                         <tr>
                                             <td><input type="text" name="ability_name" class="form-control form-control-sm" value="{{ ability.get('name', '') }}"></td>
                                             <td><input type="text" name="ability_desc" class="form-control form-control-sm" value="{{ ability.get('description', '') }}"></td>
                                             <td><input type="text" name="ability_effect" class="form-control form-control-sm text-monospace" value="{{ ability.get('effect', '') }}"></td>
+                                            <td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('tr').remove()"><i class="bi bi-x"></i></button>
                                         </tr>
                                     {% endfor %}
-                                {% endif %}
+                            {% endif %}
+                            {% for ability in form.abilities %}
                                 {% include 'partials/ability_row.html' %}
-                            </tbody>
-                        </table>
-                    </div>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
             <div class="text-end mt-4">
-                <a href="{{ url_for('view_character', char_id=character.id) }}" class="btn btn-secondary">Отмена</a>
-                <button type="submit" class="btn btn-danger btn-lg px-5 shadow">Сохранить изменения</button>
+                <a href="{{ url_for('profile') }}" class="btn btn-secondary">Отмена</a>
+                <button type="submit" class="btn btn-danger btn-lg px-5 shadow">Сохранить</button>
             </div>
         </div>
     </div>

@@ -40,11 +40,7 @@
             </ul>
 
             <div class="card-footer bg-transparent py-3 d-flex justify-content-between align-items-center">
-                <!-- Кнопка лайка (задел на будущее) -->
-                <button class="btn btn-outline-danger rounded-pill">
-                    <i class="bi bi-heart"></i> Лайк (0)
-                </button>
-
+                {% include "partials/like_btn.html" %}
                 <small class="text-muted">Автор: {{ character.author.username }}</small>
             </div>
         </div>
@@ -124,17 +120,30 @@
             </div>
         </div>
 
-        <!-- Секция комментариев (тоже потом, пока не работает) -->
+        <!-- Секция комментариев -->
         <div class="card shadow-sm border-0 bg-body">
             <div class="card-header bg-transparent border-bottom">
-                <h5 class="mb-0"><i class="bi bi-chat-left-text"></i> Комментарии (0)</h5>
+                <h5 class="mb-0"><i class="bi bi-chat-left-text"></i> Комментарии</h5>
             </div>
             <div class="card-body">
-                <textarea class="form-control mb-2" rows="2" placeholder="Оставьте комментарий" disabled></textarea>
-                <button class="btn btn-primary btn-sm" disabled>Отправить</button>
-
-                <hr>
-                <p class="text-muted text-center py-3">Здесь будут комментарии других игроков.</p>
+                {% if current_user.is_authenticated %}
+                    <!-- Форма отправляет POST-запрос через hx-post и заменяет div #comments-container ответом сервера. hx-on::after-request очищает поле ввода -->
+                    <form hx-post="{{ url_for('add_comment', char_id=character.id) }}"
+                          hx-target="#comments-container"
+                          hx-swap="innerHTML"
+                          hx-on::after-request="this.reset()"
+                          class="mb-4">
+                        <textarea name="text" class="form-control mb-2" rows="2" placeholder="Оставьте комментарий..." required></textarea>
+                        <button type="submit" class="btn btn-primary btn-sm">Отправить</button>
+                    </form>
+                {% else %}
+                    <div class="alert alert-secondary py-2 text-center mb-4">
+                        <a href="{{ url_for('login') }}">Войдите</a>, чтобы оставить комментарий.
+                    </div>
+                {% endif %}
+                <div id="comments-container">
+                    {% include "partials/comments_list.html" %}
+                </div>
             </div>
         </div>
 

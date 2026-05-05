@@ -21,31 +21,33 @@
     </div>
 </div>
 <form method="POST" enctype="multipart/form-data" id="characterForm">
+    {{ form.image_b64() }}
     <div class="row g-4">
-        <!-- Левая колонка (Основное) -->
         <div class="col-md-4">
             <div class="card shadow-sm border-0 mb-4 bg-body">
                 <div class="card-body">
                     <h5 class="card-title mb-3">Основное</h5>
 
                     <div class="text-center mb-3">
-                        <input type="file" name="image_file" class="form-control form-control-sm" accept="image/*">
-                        <small class="text-muted">Загрузите картинку</small>
+                        {{ form.image_file(class="form-control form-control-sm", accept="image/*") }}
+                        {% for error in form.image_file.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                        <small class="text-muted">150×180 (±10px)</small>
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label">Имя</label>
-                        <input type="text" name="name" id="nameInput" class="form-control" required>
+                        {{ form.name(class="form-control", placeholder="Имя персонажа") }}
+                        {% for error in form.name.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
                     </div>
 
                     <div class="row g-2 mb-3">
                         <div class="col-6">
                             <label class="form-label">Уровень</label>
-                            <input type="number" name="level" id="levelInput" class="form-control" value="1">
+                            {{ form.level(class="form-control") }}
                         </div>
                         <div class="col-6">
                             <label class="form-label">HP</label>
-                            <input type="number" name="hp" id="hpInput" class="form-control" value="100">
+                            {{ form.hp(class="form-control") }}
                         </div>
                     </div>
                 </div>
@@ -53,62 +55,63 @@
 
             <div class="card shadow-sm border-0 bg-body">
                 <div class="card-body">
-                    <h5 class="card-title mb-3">Характеристики (Stats)</h5>
+                    <h5 class="card-title mb-3">Характеристики</h5>
                     <div class="row g-2">
-                        <div class="col-6"><label class="form-label small">Сила</label><input type="number" name="strength" id="strInput" class="form-control form-control-sm" value="0"></div>
-                        <div class="col-6"><label class="form-label small">Ловкость</label><input type="number" name="dexterity" id="dexInput" class="form-control form-control-sm" value="0"></div>
-                        <div class="col-6"><label class="form-label small">Интеллект</label><input type="number" name="intelligence" id="intInput" class="form-control form-control-sm" value="0"></div>
-                        <div class="col-6"><label class="form-label small">Харизма</label><input type="number" name="charisma" id="chaInput" class="form-control form-control-sm" value="0"></div>
+                        <div class="col-6"><label class="small">Сила</label>{{ form.strength(class="form-control form-control-sm") }}</div>
+                        <div class="col-6"><label class="small">Ловкость</label>{{ form.dexterity(class="form-control form-control-sm") }}</div>
+                        <div class="col-6"><label class="small">Интеллект</label>{{ form.intelligence(class="form-control form-control-sm") }}</div>
+                        <div class="col-6"><label class="small">Харизма</label>{{ form.charisma(class="form-control form-control-sm") }}</div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Правая колонка (Класс, Раса, Способности) -->
         <div class="col-md-8">
             <div class="card shadow-sm border-0 mb-4 bg-body">
                 <div class="card-body">
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <h5 class="card-title">Раса</h5>
-                            <input type="text" name="race_name" id="raceNameInput" class="form-control mb-2" placeholder="Название (напр. Человек)">
-                            <textarea name="race_effect" id="raceEffectInput" class="form-control form-control-sm text-monospace" rows="2" placeholder="Эффект (код)"></textarea>
+                            <h5>Раса</h5>
+                            {{ form.race_name(class="form-control mb-2", placeholder="Название") }}
+                            {{ form.race_effect(class="form-control form-control-sm text-monospace", rows="2", placeholder="Код эффекта") }}
+
                         </div>
                         <div class="col-md-6">
-                            <h5 class="card-title">Класс</h5>
-                            <input type="text" name="class_name" id="classNameInput" class="form-control mb-2" placeholder="Название (напр. Воин)">
-                            <textarea name="class_effect" id="classEffectInput" class="form-control form-control-sm text-monospace" rows="2" placeholder="Эффект (код)"></textarea>
+                            <h5>Класс</h5>
+                            {{ form.class_name(class="form-control mb-2", placeholder="Название")}}
+                            {{ form.class_effect(class="form-control form-control-sm text-monospace", placeholder="Код эффекта") }}
                         </div>
                     </div>
                 </div>
             </div>
-                <div class="card shadow-sm border-0 bg-body">
-                    <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">Способности (Abilities)</h5>
-                        <button type="button" class="btn btn-sm btn-outline-primary"
-                                hx-get="{{ url_for('htmx_add_ability') }}"
-                                hx-target="#abilities-body"
-                                hx-swap="beforeend">
-                            + Добавить
-                        </button>
-                    </div>
-                    <div class="card-body p-0">
-                        <table class="table table-hover table-sm mb-0">
-                            <thead class="table-dark">
-                                <tr>
-                                    <th>Название</th><th>Описание</th><th>Эффект</th><th></th>
-                                </tr>
-                            </thead>
-                            <tbody id="abilities-body">
-                            {% include 'partials/ability_row.html' %}
-                            </tbody>
-                        </table>
-                    </div>
+
+            <div class="card shadow-sm border-0 bg-body">
+                <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Способности</h5>
+                    <button type="button" class="btn btn-sm btn-outline-primary"
+                            hx-get="{{ url_for('htmx_add_ability') }}"
+                            hx-target="#abilities-body"
+                            hx-swap="beforeend">
+                        + Добавить
+                    </button>
                 </div>
+                <div class="card-body p-0" style="max-height: 300px; overflow-y: auto;">
+                    <table class="table table-hover table-sm mb-0">
+                        <thead class="table-dark">
+                            <tr><th>Название</th><th>Описание</th><th>Эффект</th><th></th></tr>
+                        </thead>
+                        <tbody id="abilities-body">
+                            {% for ability in form.abilities %}
+                                {% include 'partials/ability_row.html' %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
             <div class="text-end mt-4">
                 <a href="{{ url_for('profile') }}" class="btn btn-secondary">Отмена</a>
-                <button type="submit" class="btn btn-danger btn-lg px-5 shadow">Сохранить персонажа</button>
+                <button type="submit" class="btn btn-danger btn-lg px-5 shadow">Сохранить</button>
             </div>
         </div>
     </div>
