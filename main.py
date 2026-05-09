@@ -47,6 +47,14 @@ def save_image_from_b64(b64_string):
         return None
 
 
+def resize_img(image, max_width=150, max_height=180):
+    width, height = image.size
+    scale = min(max_width / width, max_height / height)
+    new_width = int(width * scale)
+    new_height = int(height * scale)
+    return image.resize((new_width, new_height))
+
+
 def get_data(char):
     # Базовые поля
     char.name = request.form.get('name', 'Безымянный')
@@ -146,11 +154,14 @@ def add_character():
         if img_file and img_file.filename != '':
             try:
                 image = Image.open(img_file)
+                if not (140 <= image.width <= 160 and 170 <= image.height <= 190):
+                    image = resize_img(image)
                 width, height = image.size
-                if not (140 <= width <= 160 and 170 <= height <= 190) or not (20 <= height - width <= 40):
+                if not (20 <= height - width <= 40):
                     flash(
-                        f'Изображение имеет неправильные размеры или соотношение сторон.'
-                        f' Макс: 160×190 Мин: 140×170 Ваше: {width}×{height}','danger')
+                        f'Изображение имеет неправильное соотношение сторон.'
+                        f'Требуется: 150×180 и соотношение сторон 20-40 Ваше: {width}×{height}, {height - width}',
+                        'danger')
                     return render_template('character_form.html', form=form, character=None)
             except Exception as e:
                 flash(f'Ошибка при работе с изображением: {e}', 'danger')
@@ -175,12 +186,11 @@ def view_character(char_id):
     character = db_sess.query(Character).get(char_id)
     if not character:
         abort(404)
-    like = db_sess.query(Like).filter(Like.user_id == current_user.id, Like.character_id == char_id).first()
-    if like:
-        user_liked = True
+    if current_user.is_authenticated:
+        like = db_sess.query(Like).filter(Like.user_id == current_user.id, Like.character_id == char_id).first()
     else:
-        user_liked = False
-    return render_template('character_detail.html', character=character, user_liked=user_liked)
+        like = False
+    return render_template('character_detail.html', character=character, user_liked=bool(like))
 
 
 @app.route('/character/<int:char_id>/delete', methods=['POST'])
@@ -221,12 +231,15 @@ def edit_character(char_id):
         if img_file and img_file.filename != '':
             try:
                 image = Image.open(img_file)
+                if not (140 <= image.width <= 160 and 170 <= image.height <= 190):
+                    image = resize_img(image)
                 width, height = image.size
-                if not (140 <= width <= 160 and 170 <= height <= 190) or not (20 <= height - width <= 40):
+                if not (20 <= height - width <= 40):
                     flash(
-                        f'Изображение имеет неправильные размеры или соотношение сторон.'
-                        f' Макс: 160×190 Мин: 140×170 Ваше: {width}×{height}','danger')
-                    return render_template('character_edit.html', form=form, character=char)
+                        f'Изображение имеет неправильное соотношение сторон.'
+                        f'Требуется: 150×180 и соотношение сторон 20-40. Ваше: {width}×{height}, {height - width}',
+                        'danger')
+                    return render_template('character_form.html', form=form, character=None)
             except Exception as e:
                 flash(f'Ошибка при работе с изображением: {e}', 'danger')
                 return render_template('character_edit.html', form=form, character=char)
