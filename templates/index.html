@@ -10,32 +10,40 @@
 
 <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
     {% for character in characters %}
-        <div class="col">
-            <div class="card h-100 shadow-sm border-0 bg-body">
-                {% if character.image_path %}
-                    <img src="{{ url_for('static', filename=character.image_path) }}" class="card-img-top object-fit-cover" alt="{{ character.name }}">
-                {% else %}
-                    <div class="card-img-top bg-secondary d-flex align-items-center justify-content-center text-light" style="height: 375px;">
-                        <i class="bi bi-person-fill display-1"></i>
-                    </div>
-                {% endif %}
+    <div class="col">
+        <div class="card h-100 shadow-sm border-0 bg-body">
+            {% if character.image_path %}
+            <img src="{{ url_for('static', filename=character.image_path) }}" class="card-img-top object-fit-cover"
+                 alt="{{ character.name }}">
+            {% else %}
+            <div class="card-img-top bg-secondary d-flex align-items-center justify-content-center text-light"
+                 style="height: 375px;">
+                <i class="bi bi-person-fill display-1"></i>
+            </div>
+            {% endif %}
 
-                <div class="card-body d-flex flex-column">
-                    <h5 class="card-title fw-bold mb-1">{{ character.name }}</h5>
-                    <p class="card-text text-muted small mb-3">
-                        <span class="badge text-bg-danger rounded-pill">Уровень: {{ character.level }}</span>
-                        <span class="badge text-bg-success">Здоровье: {{ character.hp}}</span>
-                        {% if character.race %}<span class="badge text-bg-secondary">{{ character.race[0] }}</span>{% endif %}
-                        {% if character.character_class %}<span class="badge text-bg-secondary">{{ character.character_class[0] }}</span>{% endif %}
-                    </p>
-                    <a href="{{ url_for('view_character', char_id=character.id) }}" class="btn btn-outline-danger w-100 mt-auto">Подробнее</a>
-                </div>
+            <div class="card-body d-flex flex-column">
+                <h5 class="card-title fw-bold mb-1">{{ character.name }}</h5>
+                <p class="card-text text-muted small mb-3">
+                    <span class="badge text-bg-danger rounded-pill">Уровень: {{ character.level }}</span>
+                    <span class="badge text-bg-success">Здоровье: {{ character.hp}}</span>
+                    {% if character.race %}
+                    <span class="badge text-bg-secondary">{{ character.race[0] }}
+                    </span>
+                    {% endif %}
+                    {% if character.character_class %}
+                    <span class="badge text-bg-secondary">{{ character.character_class[0] }}</span>
+                    {% endif %}
+                </p>
+                <a href="{{ url_for('view_character', char_id=character.id) }}"
+                   class="btn btn-outline-danger w-100 mt-auto">Подробнее</a>
             </div>
         </div>
+    </div>
     {% else %}
-        <div class="col-12 text-center py-5">
-            <h4 class="text-muted">Персонажей пока нет. Будьте первым!</h4>
-        </div>
+    <div class="col-12 text-center py-5">
+        <h4 class="text-muted">Персонажей пока нет. Будьте первым!</h4>
+    </div>
     {% endfor %}
 </div>
 {% endblock %}

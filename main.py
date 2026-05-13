@@ -58,6 +58,8 @@ def resize_img(image, max_width=150, max_height=180):
 def get_data(char):
     # Базовые поля
     char.name = request.form.get('name', 'Безымянный')
+    if not char.name.strip():
+        char.name = 'Безымянный'
     char.level = int(request.form.get('level', 1))
     char.hp = int(request.form.get('hp', 100))
     # Раса и Класс
@@ -109,7 +111,7 @@ def register():
         db_sess.commit()
         login_user(user, remember=form.remember_me.data)
         flash('Регистрация успешна!', 'success')
-        return redirect(url_for('profile'))
+        return redirect(url_for('index'))
     return render_template('register.html', form=form)
 
 
@@ -123,7 +125,7 @@ def login():
         user = db_sess.query(User).filter(User.email == form.email.data).first()
         if user and user.check_password(form.password.data):
             login_user(user, remember=form.remember_me.data)
-            return redirect(url_for('profile'))
+            return redirect(url_for('index'))
         flash('Неправильный логин или пароль', 'danger')
     return render_template('login.html', form=form)
 
