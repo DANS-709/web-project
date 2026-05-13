@@ -289,7 +289,7 @@ def load_json_character():
         db_sess.add(char)
         db_sess.commit()
         flash('Персонаж успешно добавлен!', 'success')
-        return '', 200, {'HX-Redirect': url_for('profile')}
+        return redirect(url_for('profile'))
     except Exception:
         abort(400)
 
